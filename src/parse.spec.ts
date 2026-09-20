@@ -338,6 +338,23 @@ describe("parse(string)", function () {
     });
   });
 
+  it("should ignore duplicate parameters mixing quoted and unquoted", function () {
+    assert.deepEqual(parse('text/html; charset="utf-8"; charset=iso-8859-1'), {
+      type: "text/html",
+      index: 46,
+      parameters: {
+        charset: "utf-8",
+      },
+    });
+    assert.deepEqual(parse('text/html; charset=utf-8; Charset="iso-8859-1"'), {
+      type: "text/html",
+      index: 46,
+      parameters: {
+        charset: "utf-8",
+      },
+    });
+  });
+
   it("should skip parsing parameters when options.parameters is false", function () {
     const type = parse("text/html; charset=utf-8; foo=bar", {
       parameters: false,

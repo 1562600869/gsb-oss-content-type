@@ -1,5 +1,5 @@
 import { describe, it, assert } from "vitest";
-import { format } from "./index.js";
+import { format, parse } from "./index.js";
 
 describe("format(obj)", function () {
   it("should format basic type", function () {
@@ -104,5 +104,18 @@ describe("format(obj)", function () {
   it("should reject parameter value containing vertical tab", function () {
     const obj = { type: "text/html", parameters: { foo: "bar\u000bbaz" } };
     assert.throws(format.bind(null, obj), /Invalid parameter value/);
+  });
+
+  it("should round-trip format(parse(x)) on valid input", function () {
+    const header =
+      'Text/HTML; Charset="UT\\F-8"; foo="bar or \\"baz\\""; empty=""';
+    const formatted = format(parse(header));
+    assert.strictEqual(
+      formatted,
+      'text/html; charset=UTF-8; foo="bar or \\"baz\\""; empty=""',
+    );
+    const reparsed = parse(formatted);
+    assert.strictEqual(reparsed.type, "text/html");
+    assert.deepEqual(reparsed.parameters, parse(header).parameters);
   });
 });

@@ -134,6 +134,11 @@ function parameterValue(str: string): string {
       throw new TypeError(`Invalid parameter value: ${str}`);
     }
 
+    if (code === DQUOTE || code === BSLASH) {
+      result += `${str.slice(start, index)}\\`;
+      start = index;
+    }
+
     index++;
   }
 
@@ -225,9 +230,9 @@ export function parse(header: string, options?: ParseOptions): ContentType {
   }
   const valueEnd = whitespace === -1 ? index : whitespace;
   const value = header.slice(valueStart, valueEnd);
-  const type = value;
+  const type = (typeFlags & CASE_FLAGS) !== 0 ? value.toLowerCase() : value;
 
-  if (index === len || stop !== 0) {
+  if (index === len || stop !== 0 || options?.parameters === false) {
     return { type, index, parameters: new NullObject() };
   }
 
@@ -267,7 +272,7 @@ function parseParameters(
       if (code === EQ) {
         const keyEnd = keyWhitespace === -1 ? index : keyWhitespace;
         const value = header.slice(keyStart, keyEnd);
-        const key = value;
+        const key = (keyFlags & CASE_FLAGS) !== 0 ? value.toLowerCase() : value;
 
         index++;
         while ((CHAR_MAP[header.charCodeAt(index)] & OWS) !== 0) {
@@ -281,9 +286,11 @@ function parseParameters(
           while (index < len) {
             const code = header.charCodeAt(index);
             if (code === DQUOTE) {
-              parameters[key] = escaped
-                ? unescapeQuotedPairs(header, quotedStart, index)
-                : header.slice(quotedStart, index);
+              if (!(key in parameters)) {
+                parameters[key] = escaped
+                  ? unescapeQuotedPairs(header, quotedStart, index)
+                  : header.slice(quotedStart, index);
+              }
 
               index++;
               let stop = 0;
@@ -337,7 +344,9 @@ function parseParameters(
 
         {
           const valueEnd = valueWhitespace === -1 ? index : valueWhitespace;
-          parameters[key] = header.slice(valueStart, valueEnd);
+          if (!(key in parameters)) {
+            parameters[key] = header.slice(valueStart, valueEnd);
+          }
         }
 
         if (stop !== 0) break parameter;
@@ -362,5 +371,5 @@ function parseParameters(
  * Remove backslashes from quoted pairs in a known-terminated quoted string body.
  */
 function unescapeQuotedPairs(str: string, start: number, end: number): string {
-  return str.slice(start, end);
+  return str.slice(start, end).replace(/\\([\s\S])/g, "$1");
 }

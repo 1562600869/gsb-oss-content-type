@@ -81,3 +81,28 @@ Passing `start` and `end` allows for validating a subset of a string, instead of
 [coverage-url]: https://codecov.io/gh/jshttp/content-type
 [license-image]: http://img.shields.io/npm/l/content-type.svg?style=flat
 [license-url]: LICENSE
+
+## 中文说明
+
+创建与解析 HTTP `Content-Type` 头（RFC 9110），零运行时依赖。
+
+### API
+
+- `contentType.parse(header, options?)`：解析 `Content-Type`（或 `Accept` 中的 media range），返回 `{ type, index, parameters }`。
+  - `type`：媒体类型，解析时归一为小写（类型大小写不敏感）。
+  - `parameters`：参数表；参数名归一为小写，参数值保留原始大小写；同名参数（大小写折叠后）采用 first-wins，后出现的忽略；quoted-string 中的 `\x` quoted-pair 会去掉转义反斜杠。
+  - `index`：解析停止位置的下标。
+  - 解析器是宽容的：非法输入不抛异常（如未闭合引号的参数会被忽略）。
+- `contentType.format(obj)`：把 `{ type, parameters }` 序列化为头部字符串。非法 type / 参数名 / 参数值会抛出可诊断的 `TypeError`；含空格、`"`、`\` 的值自动加引号并转义，空值输出 `""`。
+- `contentType.isTypeValid(type, start?, end?)`：按 RFC 9110 校验 `type/subtype`。
+- `contentType.isTokenValid(token, start?, end?)`：按 RFC 9110 校验 token（用于参数名）。
+
+### ParseOptions
+
+- `parameters`（默认 `true`）：设为 `false` 时在首个 `;` 处早退，只返回 type，`index` 停在分号处。
+- `comma`（默认 `false`）：设为 `true` 时在逗号处早退，用于解析 `Accept` 等多值头。
+- `start`（默认 `0`）：起始解析下标，配合 `index` 可逐个解析多值头。
+
+### 测试
+
+`npm test`（ts-scripts：tsc 构建 + prettier + vitest + 覆盖率）。最近一次真实运行结果：**3 个测试文件、129 个测试全部通过**（`Test Files 3 passed (3)`，`Tests 129 passed (129)`）。
