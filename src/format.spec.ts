@@ -105,4 +105,14 @@ describe("format(obj)", function () {
     const obj = { type: "text/html", parameters: { foo: "bar\u000bbaz" } };
     assert.throws(format.bind(null, obj), /Invalid parameter value/);
   });
+
+  it("should reject parameter value containing non-Latin-1 characters", function () {
+    const obj = { type: "text/html", parameters: { foo: "bar\u0100baz" } };
+    assert.throws(format.bind(null, obj), /Invalid parameter value/);
+  });
+
+  it("should quote a value containing only a space", function () {
+    const str = format({ type: "text/html", parameters: { foo: " " } });
+    assert.strictEqual(str, 'text/html; foo=" "');
+  });
 });

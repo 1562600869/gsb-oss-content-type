@@ -1,5 +1,5 @@
 import { describe, it, assert } from "vitest";
-import { parse } from "./index.js";
+import { format, parse } from "./index.js";
 
 const invalidTypes = [
   " ",
@@ -336,6 +336,25 @@ describe("parse(string)", function () {
         charset: "utf-8",
       },
     });
+  });
+
+  it("should ignore duplicates mixing quoted and unquoted values", function () {
+    const type = parse('text/html; charset="utf-8"; CHARSET=iso-8859-1');
+    assert.deepEqual(type, {
+      type: "text/html",
+      index: 46,
+      parameters: {
+        charset: "utf-8",
+      },
+    });
+  });
+
+  it("should round-trip through format after parsing", function () {
+    const parsed = parse('text/html; charset=UTF-8; foo="bar baz"');
+    assert.strictEqual(
+      format(parsed),
+      'text/html; charset=UTF-8; foo="bar baz"',
+    );
   });
 
   it("should skip parsing parameters when options.parameters is false", function () {
